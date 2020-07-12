@@ -1,0 +1,173 @@
+<div align=center>
+<h2><{$langmodtitle}></h2>
+<h5><{$langpagedesc}></h5>
+<div align=left>
+<{$langparagraph1}>
+<br /><br />
+<{$langparagraph2}>
+<br /><br />
+</div>
+<img src="<{$voterturnout}>" /><br /><br />
+<textarea rows="10" cols="90">
+//Graph generation php file for voter turnout graph
+//File location: /modules/xbasicgraphs/graphs/voters/vote.php
+
+include ("../../../../mainfile.php");
+include (XOOPS_ROOT_PATH."/modules/xbasicgraphs/class/xgraphs/jpgraph/jpgraph.php");
+include (XOOPS_ROOT_PATH."/modules/xbasicgraphs/class/xgraphs/jpgraph/jpgraph_bar.php");
+
+global $xoopsDB;
+
+$datay = array();
+$datax = array();
+
+// Get the data
+$result = $xoopsDB->query("SELECT * FROM ".$xoopsDB->prefix("voterinfo")." WHERE voters_tot > 0 ORDER BY dist_id");
+
+while ($row = $xoopsDB->fetcharray($result)) {
+  $total_voters = $row['voters_tot'];
+  $voter_turnout = $row['votes_count'];
+  $vote_percent = (($voter_turnout * 100) / $total_voters);
+  $datay[] = $vote_percent;
+  $datax[] = $row['dist_id'];
+}
+
+// Create the graph. These two calls are always required
+$graph = new Graph(500,300,"auto");    
+$graph->SetScale("textlin");
+
+$graph->xaxis->SetTickLabels($datax);
+$graph->yaxis->scale->SetGrace(50);
+
+// Add a drop shadow
+$graph->SetShadow();
+
+// Adjust the margin a bit to make more room for titles
+$graph->img->SetMargin(40,30,20,40);
+
+// Create a bar pot
+$bplot = new BarPlot($datay);
+
+// Adjust fill color
+$bplot->SetFillColor('orange');
+$bplot->value->Show();
+$graph->Add($bplot);
+
+// Setup the titles
+$graph->title->Set("Voter Turnout By District");
+$graph->xaxis->title->Set("District Number");
+$graph->yaxis->title->Set("Turnout Percentage");
+
+$graph->title->SetFont(FF_FONT1,FS_BOLD);
+$graph->yaxis->title->SetFont(FF_FONT1,FS_BOLD);
+$graph->xaxis->title->SetFont(FF_FONT1,FS_BOLD);
+
+// Display the graph
+$graph->Stroke();
+</textarea><br /><br />
+<textarea rows="3" cols="90">
+Place the following html line anywhere that you would like the graph to be displayed
+NOTE: Be sure to replace http://www.yoursite.com with your site's XOOPS_URL
+<img src= "http://www.yoursite.com/modules/xbasicgraphs/graphs/voters/vote.php" />
+</textarea><br /><br />
+<div align=left>
+<{$langparagraph3}>
+<br /><br />
+</div>
+<img src="<{$userreg}>" /><br /><br />
+<textarea rows="10" cols="90">
+//Graph generation php file for user registration graph
+//File location: /modules/xbasicgraphs/graphs/corecode/user.php
+
+include ("../../../../mainfile.php");
+include (XOOPS_ROOT_PATH."/modules/xbasicgraphs/class/xgraphs/jpgraph/jpgraph.php");
+include (XOOPS_ROOT_PATH."/modules/xbasicgraphs/class/xgraphs/jpgraph/jpgraph_bar.php");
+
+global $xoopsDB;
+
+$datay = array();
+$datax = array();
+
+// Get the data
+$result = $xoopsDB->query("SELECT * FROM ".$xoopsDB->prefix("users")." WHERE level > 0 ORDER BY user_regdate");
+
+$regarray = array();
+
+while ($row = $xoopsDB->fetcharray($result)) {
+  $registration_date = $row['user_regdate'];
+  
+  $tempDate = $dateArray=explode(',',strftime("%Y,%m,%d,%I,%M,%p",time()));
+  $currentmonth = (int)$tempDate[1];
+  $currentyear = $tempDate[0];
+
+  $startDate = mktime(0, 0, 0, date("m")-6, date("d"),   date("Y"));
+  $tempDate = $dateArray=explode(',',strftime("%Y,%m,%d,%I,%M,%p",$startDate));
+  $startmonth = (int)$tempDate[1];
+  $startyear = $tempDate[0];
+
+  $tempDate = $dateArray=explode(',',strftime("%Y,%m,%d,%I,%M,%p",$registration_date));
+  $month = (int)$tempDate[1];
+  $year = $tempDate[0];
+  if ($year == $startyear && $month >= $startmonth) {
+    $regarray[$month - $startmonth] = $regarray[$month - $startmonth] + 1;
+  }elseif ($year > $startyear) {
+    $regarray[(12 - $startmonth) + $month] = $regarray[(12 - $startmonth) + $month] + 1;
+  }
+}
+
+$datay = $regarray;
+
+// Generate the month with year labels for the x axis
+while ($count < 7) {
+  $count++;
+  $labelDate = mktime(0, 0, 0, date("m")-(7-$count), date("d"),   date("Y"));
+  $tempDate = $dateArray=explode(',',strftime("%Y,%m,%d,%I,%M,%p",$labelDate));
+  $tempDateString = date('M Y', mktime(0, 0, 0, $tempDate[1], $tempDate[2], $tempDate[0]));
+  $datax[] = $tempDateString;
+}
+
+// Create the graph. These two calls are always required
+$graph = new Graph(500,300,"auto");    
+$graph->SetScale("textlin");
+$graph->yaxis->scale->SetGrace(30);
+
+$graph->xaxis->SetTickLabels($datax);
+$graph->xaxis->SetLabelAngle(90);
+
+// Add a drop shadow
+$graph->SetShadow();
+
+// Adjust the margin a bit to make more room for titles
+$graph->img->SetMargin(50,50,40,100);
+$graph->SetMarginColor('lightred');
+
+// Create a bar pot
+$bplot = new BarPlot($datay);
+
+// Adjust fill color
+$bplot->SetFillColor('darkred');
+$bplot->value->Show();
+$bplot->value->SetFormat('%d');
+$graph->Add($bplot);
+
+// Setup the titles
+$graph->title->Set("New User Registration In The Last 6 Months");
+//$graph->xaxis->title->Set("Month");
+$graph->yaxis->title->Set("Number of New Users");
+
+$graph->title->SetFont(FF_FONT1,FS_BOLD);
+$graph->yaxis->title->SetFont(FF_FONT1,FS_BOLD);
+$graph->xaxis->title->SetFont(FF_FONT1,FS_BOLD);
+
+// Display the graph
+$graph->Stroke();
+
+</textarea><br /><br />
+<textarea rows="3" cols="90">
+Place the following html line anywhere that you would like the graph to be displayed
+NOTE: Be sure to replace http://www.yoursite.com with your site's XOOPS_URL
+<img src= "http://www.yoursite.com/modules/xbasicgraphs/graphs/corecode/user.php" />
+</textarea>
+</div>
+
+
